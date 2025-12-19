@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rock Paper Scissors Tournament</title>
+</head>
+
+<body>
+    <h1>Rock Paper Scissors Tournament</h1>
+    
+    <h2>Register Player</h2>
+    <input type="text" id="playerName" placeholder="Enter player name">
+    <button onclick="registerPlayer()">Register Player</button>
+
+    <pre id="registerOutput"></pre>
+
+    <hr>
+
+    <h2>Start Game</h2>
+
+    <label>Player 1:</label>
+    <input type="text" id="p1" placeholder="Player 1">
+
+    <br><br>
+
+    <label>Player 2:</label>
+    <input type="text" id="p2" placeholder="Player 2">
+
+    <br><br>
+
+    <button onclick="startGame()">Start Game</button>
+
+    <pre id="startOutput"></pre>
+
+    <hr>
+
+    <h2>Play Round</h2>
+
+    <button onclick="playRound('rock')">Rock</button>
+    <button onclick="playRound('paper')">Paper</button>
+    <button onclick="playRound('scissors')">Scissors</button>
+
+    <pre id="roundOutput"></pre>
+
+    <hr>
+
+    <h2>Leaderboard</h2>
+    <button onclick="loadLeaderboard()">Refresh Leaderboard</button>
+
+    <h3>Sorted by Name</h3>
+    <ul id="leaderboardName"></ul>
+
+    <h3>Sorted by Score</h3>
+    <ul id="leaderboardScore"></ul>
+
+    <script>
+        function registerPlayer() {
+            const name = document.getElementById("playerName").value;
+            if (!name) {
+                alert("Please enter a player name");
+                return;
+            }
+
+            fetch("/api/player/register", {
+              method: "POST",
+              headers: {"Content-Type": "application/json"},
+              body: JSON.stringify({ name: name })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("registerOutput").textContent = 
+                  JSON.stringify(data, null, 2);
+            });           
+          }
+
+          function startGame() {
+            fetch("/api/game/start", {
+                method: "POST",
+                headers: {"Content-Type": "application/json" },
+                body: JSON.stringify({
+                   player1: document.getElementById("p1").value,
+                   player2: document.getElementById("p2").value 
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.player1) {
+                    document.getElementById("p1").value = data.player1;
+                    document.getElementById("p1").disabled = true;
+                }
+                document.getElementById("startOutput").textContent = 
+                JSON.stringify(data, null, 2);
+            });
+          }
+
+          function playRound(choice) {
+            fetch("/api/game/play_round", {
+                method: "POST",
+                headers: {"Content-Type": "application/json" },
+                body: JSON.stringify({ player1_choice: choice })
+            })
+            .then(res => res.json())
+            .then(data => {
+              document.getElementById('gameOutput').textContent =
+                JSON.stringify(data, null, 2);
+
+              if (data.gamer_over) {
+                document.getElementById("p1").disabled = false;
+                loadLeaderboard();
+              }
+
+            });
+          }
+
+          function loadLeaderboard() {
+            fetch("/api/leaderboard")
+              .then(res => res.json())
+              .then(data => {
+                const nameList = document.getElementById("leaderboardName");
+                const scoreList = document.getElementById("leaderboardScore");
+
+                nameList.innerHTML = "";
+                scoreList.innerHTML = "";
+
+                data.by_name.forEach(player => {
+                    const li = document.createElement("li");
+                    li.textContent = `${player.name} - Score: ${player.score}`;
+                    nameList.appendChild(li);
+                });
+
+                data.by_score.forEach(player => {
+                  const li = document.createElement("li");
+                  li.textContent = `${player.name} - Score: ${player.score}`;
+                  scoreList.appendChild(li);  
+                });
+              });
+          }
+    </script>
+</body>
+</html>
